@@ -1,0 +1,25 @@
+#
+# Silicon Motion SM5xx families framebuffer configuration
+#
+
+config FB_SM5XX
+	tristate "Silicon Motion SM501 (VoyagerGX)/SM511 framebuffer support"
+	default y
+	depends on FB && SM5XX
+	select FB_MODE_HELPERS
+	select FB_CFB_FILLRECT
+	select FB_CFB_COPYAREA
+	select FB_CFB_IMAGEBLIT
+	---help---
+	 This enables support of the framebufer device for
+	 Silicon Motion 501 (VoyagerGX)/SM511 based boards.
+
+	 Say N unless you have such a board or plan to get one
+	 before you next recompile the kernel.
+
+	 This driver is also available as a module ( = code which can be
+	 inserted and removed from the running kernel whenever you want). The
+	 module will be called sm5xx-fb. If you want to compile it as a module,
+	 say M here and read <file:Documentation/modules.txt>.
+
+

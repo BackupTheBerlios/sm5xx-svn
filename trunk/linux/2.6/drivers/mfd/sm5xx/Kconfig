@@ -1,0 +1,93 @@
+#
+# Silicon Motion SM5xx family configuration
+#
+
+config SM5XX
+	depends on MFD
+	tristate "Silicon Motion SM5XX companion chips support"
+	---help---
+	 This enables support for Silicon Motion SM5XX family of
+	 companion chips.
+
+	 This option does not enable any specific
+	 functions of this CCs, but provides necessary infrastructure
+	 for other drivers to utilize.
+
+	 Say Y here will enable you to select frame buffer driver and
+	 drivers for onboard devices (uart/i2c/ssp...) or
+	 say M to compile it and all floolowed drivers as module(s),
+	 this module will be called sm5xx-core.
+
+	 For additional documentation check this:
+	 http://www.siliconmotion.com.tw
+
+choice
+	prompt "SM5xx family member"
+	depends on SM5XX
+	default SM501
+
+config SM501
+	depends on SM5XX
+	bool "Silicon Motion SM501 (VoyagerGX) support"
+	---help---
+	 This enables support for Silicon Motion 501 (VoyagerGX)
+	 companion chip.
+
+config SM511
+	depends on SM5XX
+	bool "Silicon Motion SM511 support"
+	---help---
+	 This enables support for Silicon Motion 511 companion chip.
+	 At current time (2006-10-12), only draft of manuals are accessible.
+endchoice
+
+choice
+	prompt "Main system connection type"
+	depends on SM5XX
+	default SM501_MMIO if CPU_SH4=y || ARM=y || MIPS=y
+
+config SM5XX_PCI
+	boolean "Connected through PCI (pin to pin or plugged in the slot)"
+	depends on SM5XX  && PCI
+
+config SM5XX_MMIO
+	boolean "Connected as Memory Mapped device"
+	depends on SM5XX
+
+endchoice
+
+
+config SM5XX_BUSMASTER
+	boolean "Bus master support"
+	depends on SM5XX
+	default y
+	---help---
+	  Say Y here if SM5XX chip could be a bus master
+	  on PCI/system memory bus.
+
+choice
+	prompt "MMIO mode"
+	depends on SM5XX_MMIO && SM5XX
+	default SM5XX_MMIO_XSCALE if ARM=y
+	default SM5XX_MMIO_SH4 if CPU_SH4=y
+	default SM5XX_MMIO_MIPS if MIPS=y
+
+config SM5XX_MMIO_XSCALE
+	boolean "Intel XScale mode"
+	depends on SM5XX_MMIO
+
+config SM5XX_MMIO_SH4
+	boolean "Renesas SH4 mode"
+	depends on SM5XX_MMIO
+
+config SM5XX_MMIO_MIPS
+	boolean "NEC MIPS mode"
+	depends on SM5XX_MMIO
+endchoice
+
+config SM5XX_MMIO_BASE_ADDR
+	hex "Physical base address of frame buffer and mapped registers"
+	default "0x3E00000" if !SM5XX_MMIO_MIPS
+	default "0x1E00000" if SM5XX_MMIO_MIPS
+	depends on SM5XX_MMIO && SM5XX
+
