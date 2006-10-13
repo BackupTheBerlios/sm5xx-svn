@@ -132,11 +132,11 @@ void _sm5xx_write32(int regindex, u32 val, const struct sm5xx_bus *_bus)
 }
 #endif
 
-typedef struct sm5xx_mem_list {
+struct sm5xx_mem_list {
 	struct list_head list;
-	u_long length;
+	unsigned long length;
 	void *address;
-} *sm5xx_mem_list;
+};
 
 static LIST_HEAD(sm5xx_bus_list);
 
@@ -152,27 +152,26 @@ void sm5xx_fix_cache_bug(struct sm5xx_bus *bus)
 	ignore = sm5xx_read32(bus->mem_limit - 0x00100100);
 }
 
-static sm5xx_mem_list sm5xx_find_neighbor(struct sm5xx_bus *bus,
-					  sm5xx_mem_list neighbor)
+static struct sm5xx_mem_list *sm5xx_find_neighbor(struct sm5xx_bus *bus,
+					  struct sm5xx_mem_list *neighbor)
 {
-	sm5xx_mem_list lst;
+	struct sm5xx_mem_list *lst;
 	void *top = neighbor->address + neighbor->length;
 
 	pr_debug(" %s: %p, length: %#lx\n", __FUNCTION__,
 		neighbor->address, neighbor->length);
 
 	list_for_each_entry(lst, &bus->free_list_head, list) {
-
 		pr_debug(" %p %#lx\n", lst, lst->length);
-		/* is the top aligned with the bottom of something in the free list */
-		if (lst->address == top) {
+		/* is the top aligned with the bottom of something in the free
+		   list */
+		if (lst->address == top)
 			return lst;
-		}
 
-		/* is the bottom alighed with the top of something in the free list */
-		if (lst->address + lst->length == neighbor->address) {
+		/* is the bottom alighed with the top of something in the free
+		   list */
+		if (lst->address + lst->length == neighbor->address)
 			return lst;
-		}
 	}
 
 	pr_debug(" No match\n");
@@ -182,9 +181,10 @@ static sm5xx_mem_list sm5xx_find_neighbor(struct sm5xx_bus *bus,
 
 /* free list is sorted by size (smallest first) */
 
-static void sm5xx_insert_by_size(struct sm5xx_bus *bus, sm5xx_mem_list ins)
+static void sm5xx_insert_by_size(struct sm5xx_bus *bus,
+				 struct sm5xx_mem_list *ins)
 {
-	sm5xx_mem_list lst = NULL;
+	struct sm5xx_mem_list *lst = NULL;
 
 	pr_debug(" %s: %p, length: %ld, lst: %p\n", __FUNCTION__, ins,
 		ins->length, lst);
@@ -198,14 +198,13 @@ static void sm5xx_insert_by_size(struct sm5xx_bus *bus, sm5xx_mem_list ins)
 	list_add_tail(&ins->list, &lst->list);
 }
 
-static void sm5xx_reclaim(struct sm5xx_bus *bus, sm5xx_mem_list reclaim)
+static void sm5xx_reclaim(struct sm5xx_bus *bus, struct sm5xx_mem_list *reclaim)
 {
-	sm5xx_mem_list lst;
+	struct sm5xx_mem_list *lst;
 
 	pr_debug(" %s: %p\n", __FUNCTION__, reclaim);
 
 	while ((lst = sm5xx_find_neighbor(bus, reclaim))) {
-
 		pr_debug(" neighbor: %p, length: %ld\n", reclaim, lst->length);
 
 		list_del(&lst->list);
@@ -225,7 +224,7 @@ static void sm5xx_reclaim(struct sm5xx_bus *bus, sm5xx_mem_list reclaim)
 
 void sm5xx_free(struct sm5xx_bus *bus, void *vaddr)
 {
-	sm5xx_mem_list mem_lst;
+	struct sm5xx_mem_list *mem_lst;
 
 	list_for_each_entry(mem_lst, &bus->mem_list_head, list) {
 		if (mem_lst->address == vaddr) {
@@ -238,8 +237,8 @@ void sm5xx_free(struct sm5xx_bus *bus, void *vaddr)
 
 void *sm5xx_malloc(struct sm5xx_bus *bus, u32 size, u32 align)
 {
-	sm5xx_mem_list free_lst = NULL, new_lst;
-	u_long split_length;
+	struct sm5xx_mem_list *free_lst = NULL, *new_lst;
+	unsigned long split_length;
 
 	pr_debug(" %s: %x\n", __FUNCTION__, size);
 
@@ -251,12 +250,10 @@ void *sm5xx_malloc(struct sm5xx_bus *bus, u32 size, u32 align)
 	BUG_ON(align & (align - 1));	/* must be power of 2 */
 
 	list_for_each_entry(free_lst, &bus->free_list_head, list) {
-
 		pr_debug("lst: %p, length: %lx\n", free_lst, free_lst->length);
 
 		/* find one big enough */
 		if (free_lst->length >= size) {
-
 			split_length = free_lst->length - size;
 
 			/* align the split */
@@ -299,19 +296,19 @@ void *sm5xx_malloc(struct sm5xx_bus *bus, u32 size, u32 align)
 	return NULL;
 }
 
-static irqreturn_t sm5xx_ci_irq(struct sm5xx_bus *bus,
-				u32 irq, void *dev_id, struct pt_regs *regs)
+static irqreturn_t sm5xx_ci_irq(struct sm5xx_bus *bus, u32 irq, void *dev_id)
 {
 	/*TODO: */
 	sm5xx_write32(RAW_INT_STATUS, FINIT(RAW_INT_STATUS, CMD_INTPR, CLEAR));
 	return IRQ_HANDLED;
 }
 
-static irqreturn_t sm5xx_irq_demux(int irq, void *dev_id, struct pt_regs *regs)
+/* XXX: All of this mess needs to be wired up as a chained IRQ chip.. */
+static irqreturn_t sm5xx_irq_demux(int irq, void *dev_id)
 {
 	u32 pending, irq_mask;
 	struct sm5xx_irqdesc *desc;
-	struct sm5xx_bus *bus = (struct sm5xx_bus *)dev_id;
+	struct sm5xx_bus *bus = dev_id;
 
 	pending = sm5xx_read32(INT_STATUS);
 	if (unlikely(pending == 0))
@@ -321,12 +318,17 @@ static irqreturn_t sm5xx_irq_demux(int irq, void *dev_id, struct pt_regs *regs)
 		for (desc = bus->irq_desc;
 		     desc < &bus->irq_desc[SM5XX_NR_INTS] && desc->handler;
 		     desc++) {
+		     	irqreturn_t ret;
 			irq_mask = pending & desc->mask;
-			if (irq_mask &&
-			    desc->handler(bus, irq_mask, desc->data,
-					  regs) == IRQ_NONE)
-				BUG();	/* Sorry, but irq MUST be handled,
-					   else you reduce performance essentially */
+
+			ret = desc->handler(bus, irq_mask, desc->data);
+
+			/*
+			 * Sorry, but irq MUST be handled,
+			 * else you reduce performance essentially
+			 */
+			if (irq_mask && ret == IRQ_NONE)
+				BUG();
 		}
 		pending = sm5xx_read32(INT_STATUS);
 	} while (pending);
@@ -462,7 +464,7 @@ static int sm5xx_match(struct device *_dev, struct device_driver *_drv)
 	return dev->devid == drv->devid;
 }
 
-static int sm5xx_bus_suspend(struct device *dev, u32 state)
+static int sm5xx_bus_suspend(struct device *dev, pm_message_t state)
 {
 	struct sm5xx_dev *sadev = SM5XX_DEV(dev);
 	struct sm5xx_driver *drv = SM5XX_DRV(dev->driver);
@@ -517,14 +519,15 @@ struct bus_type sm5xx_bus_type = {
 	.resume = sm5xx_bus_resume,
 };
 
-struct sm5xx_bus *sm5xx_bus_alloc()
+struct sm5xx_bus *sm5xx_bus_alloc(void)
 {
 	struct sm5xx_bus *bus;
-	bus = kmalloc(sizeof(struct sm5xx_bus), GFP_KERNEL);
-	if (bus) {
-		memset(bus, 0, sizeof(struct sm5xx_bus));
-		INIT_LIST_HEAD(&bus->bus_list);
-	}
+
+	bus = kzalloc(sizeof(struct sm5xx_bus), GFP_KERNEL);
+	if (unlikely(!bus))
+		return ERR_PTR(-ENOMEM);
+
+	INIT_LIST_HEAD(&bus->bus_list);
 	return bus;
 }
 
@@ -569,8 +572,7 @@ int sm5xx_bus_init(struct sm5xx_bus *bus)
 	init_MUTEX(&bus->control_regs_lock);
 	spin_lock_init(&bus->irq_lock);
 
-	bus->all_free_mem =
-	    (sm5xx_mem_list) kmalloc(sizeof(*bus->all_free_mem), GFP_KERNEL);
+	bus->all_free_mem = kmalloc(sizeof(*bus->all_free_mem), GFP_KERNEL);
 	if (unlikely(!bus->all_free_mem))
 		return -ENOMEM;
 
@@ -593,9 +595,8 @@ int sm5xx_bus_init(struct sm5xx_bus *bus)
 		return -ENOMEM;
 	bus->ci_list.head = bus->ci_list.tail = 0;
 
-	if ((ret =
-	     request_irq(bus->irq, sm5xx_irq_demux, SA_SHIRQ, "sm5xx_irq_demux",
-			 bus)) < 0) {
+	if ((ret = request_irq(bus->irq, sm5xx_irq_demux,
+			       IRQF_DISABLED, "sm5xx_irq_demux", bus)) < 0) {
 		printk(KERN_ERR DRIVER_NAME " - failed to attach interrupt\n");
 		return ret;
 	}
@@ -603,13 +604,10 @@ int sm5xx_bus_init(struct sm5xx_bus *bus)
 	sm5xx_reset_regs(bus);
 	list_add_tail(&bus->bus_list, &sm5xx_bus_list);
 
-	sm5xx_request_irq(bus,
-			  FINIT(INT_MASK, CMD_INTPR, ENABLE),
-			  sm5xx_ci_irq, NULL, 0);
-
+	ret = sm5xx_request_irq(bus, FINIT(INT_MASK, CMD_INTPR, ENABLE),
+				sm5xx_ci_irq, NULL, 0);
 	printk(DRIVER_NAME " - inited\n");
-
-	return 0;
+	return ret;
 }
 
 const char *sm5xx_dev_name[] = {
@@ -624,7 +622,7 @@ struct sm5xx_dev *sm5xx_find_child(struct sm5xx_bus *bus, unsigned int child_id)
 	struct sm5xx_dev *child_dev;
 	struct klist_node *node;
 
-	if (!bus)
+	if (unlikely(!bus))
 		return NULL;
 
 	klist_iter_init_node(&bus->bus_dev->klist_children, &it, NULL);
@@ -669,16 +667,17 @@ int sm5xx_driver_register(struct sm5xx_driver *driver)
 	int ret;
 	struct sm5xx_dev *dev;
 	struct list_head *tmp;
+
 	if (driver->drv.bus != &sm5xx_bus_type)
 		return -EINVAL;
 
-	if (bus_for_each_dev
-	    (&sm5xx_bus_type, NULL, (void *)driver->devid, compare_dev))
+	if (bus_for_each_dev(&sm5xx_bus_type, NULL, (void *)driver->devid,
+			     compare_dev))
 		return -EBUSY;
 
 	list_for_each(tmp, &sm5xx_bus_list) {
 		ret = -ENOMEM;
-		dev = (struct sm5xx_dev *)kmalloc(sizeof(*dev), GFP_KERNEL);
+		dev = kmalloc(sizeof(*dev), GFP_KERNEL);
 		if (likely(dev))
 			ret =
 			    sm5xx_init_child(dev,
@@ -696,10 +695,9 @@ int sm5xx_driver_register(struct sm5xx_driver *driver)
 	if (ret >= 0)
 		return ret;
 
-      cleanup:
-	if (dev) {
-		kfree(dev);
-	}
+cleanup:
+	kfree(dev);
+
 	return ret;
 }
 

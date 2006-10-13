@@ -1147,13 +1147,13 @@ enum {
 struct sm5xx_mem_list;
 
 struct sm5xx_bus;
-typedef irqreturn_t (*sm5xx_handler_t)(struct sm5xx_bus *bus,
-									   u32, void *, struct pt_regs *);
+typedef irqreturn_t (*sm5xx_handler_t)(struct sm5xx_bus *bus, u32, void *);
+
 struct sm5xx_irqdesc {
 	sm5xx_handler_t handler;
 	u32  mask;
 	void *data;
-};
+} ____cacheline_aligned;
 
 struct sm5xx_bus {
 	struct  list_head bus_list;
@@ -1195,8 +1195,8 @@ struct sm5xx_memreq {
 
 struct sm5xx_dev {
 	struct device	dev;
-	uint			devid;
-	u64				dma_mask;
+	uint		devid;
+	u64		dma_mask;
 };
 
 #define SM5XX_DEV(_d)	container_of((_d), struct sm5xx_dev, dev)
@@ -1210,7 +1210,7 @@ struct sm5xx_driver {
 	unsigned int		devid;
 	int (*probe)(struct sm5xx_dev *);
 	int (*remove)(struct sm5xx_dev *);
-	int (*suspend)(struct sm5xx_dev *, u32);
+	int (*suspend)(struct sm5xx_dev *, pm_message_t);
 	int (*resume)(struct sm5xx_dev *);
 };
 
