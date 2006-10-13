@@ -19,8 +19,6 @@
  *  for more details.
  *
  */
-
-#include <linux/config.h>
 #include <linux/version.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -35,8 +33,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/fb.h>
 #include <linux/circ_buf.h>
-
-#include <asm/io.h>
+#include <linux/io.h>
 
 #include <mfd/sm5xx/sm5xx.h>
 #include <mfd/sm5xx/sm5xx_ci_regs.h>
@@ -80,13 +77,6 @@ void sm5xx_setup_clock_regs(struct sm5xx_bus *bus);
 
 #define sm5xx_read32(regindex)	_sm5xx_read32(regindex, bus)
 #define sm5xx_write32(regindex,val)	_sm5xx_write32(regindex, val, bus)
-#define arraysize(x)	(sizeof(x)/sizeof(*(x)))
-
-#if DEBUG
-#define DPRINTK(format, args...) printk(format , ## args)
-#else
-#define DPRINTK(format, args...)
-#endif
 
 #if (defined(CONFIG_SM5XX_MMIO_BUSMASTER) || \
 	 defined(CONFIG_SM5XX_PCI)) && !defined(CONFIG_SM5XX_FORCE_SLAVE)
@@ -106,42 +96,7 @@ void sm5xx_dump_regs(struct sm5xx_bus *bus)
 			printk("\n %08X:", i);
 		printk(" %08X", _sm5xx_read32(i, bus));
 	}
-/*
-  printk("\n\nPanel Graphics Control Register [0x080000 - 0x080034]:");
-  for (i=0x080000;i<0x080037;i+=4) {
-	if(i%16 == 0)
-		printk("\n %08X:",i);
-	printk(" %08X",_sm5xx_read32(i,bus));
-  }
 
-  printk("\n\nVideo Control Register [0x080040 - 0x080068]:");
-  for (i=0x080040;i<0x08006B;i+=4) {
-	if(i%16 == 0)
-		printk("\n %08X:",i);
-	printk(" %08X",_sm5xx_read32(i,bus));
-  }
-
-  printk("\n\nVideo Alpha Control Register [0x080080 - 0x0800C0]:");
-  for (i=0x080080;i<0x0800C3;i+=4) {
-	if(i%16 == 0)
-		printk("\n %08X:",i);
-	printk(" %08X",_sm5xx_read32(i,bus));
-  }
-
-  printk("\n\nPanel Cursor Control Register [0x0800F0 - 0x0800FC]:");
-  for (i=0x0800F0;i<0x0800FF;i+=4) {
-	if(i%16 == 0)
-		printk("\n %08X:",i);
-	printk(" %08X",_sm5xx_read32(i,bus));
-  }
-
-  printk("\n\nAlpha Control Register [0x080100 - 0x080134]:");
-  for (i=0x080100;i<0x080137;i+=4) {
-	if(i%16 == 0)
-		printk("\n %08X:",i);
-	printk(" %08X",_sm5xx_read32(i,bus));
-  }
-*/
 	printk("\n\nCRT Graphics Control Register [0x080200 - 0x080224]:");
 	for (i = 0x080200; i < 0x080227; i += 4) {
 		if (i % 16 == 0)
@@ -163,20 +118,6 @@ void sm5xx_dump_regs(struct sm5xx_bus *bus)
 		printk(" %08X", _sm5xx_read32(i, bus));
 	}
 
-/*  printk("\n\nColor Space Conversion Register [0x1000C8 - 0x1000FC]:");
-  for (i=0x1000C8;i<0x1000FF;i+=4) {
-	if ((i-8)%16 == 0)
-		printk("\n %08X:",i);
-	printk(" %08X",_sm5xx_read32(i,bus));
-  }
-
-  printk("\n\nUSB Host Register [0x040000 - 0x040054]:");
-  for (i=0x040000;i<0x040057;i+=4) {
-	if(i%16 == 0)
-		printk("\n %08X:",i);
-	printk(" %08X",_sm5xx_read32(i,bus));
-  }
-*/
 	printk("\n--------------------------------\n");
 }
 
@@ -217,12 +158,12 @@ static sm5xx_mem_list sm5xx_find_neighbor(struct sm5xx_bus *bus,
 	sm5xx_mem_list lst;
 	void *top = neighbor->address + neighbor->length;
 
-	DPRINTK(" %s: %p, length: %#lx\n", __FUNCTION__,
+	pr_debug(" %s: %p, length: %#lx\n", __FUNCTION__,
 		neighbor->address, neighbor->length);
 
 	list_for_each_entry(lst, &bus->free_list_head, list) {
 
-		DPRINTK(" %p %#lx\n", lst, lst->length);
+		pr_debug(" %p %#lx\n", lst, lst->length);
 		/* is the top aligned with the bottom of something in the free list */
 		if (lst->address == top) {
 			return lst;
@@ -234,7 +175,7 @@ static sm5xx_mem_list sm5xx_find_neighbor(struct sm5xx_bus *bus,
 		}
 	}
 
-	DPRINTK(" No match\n");
+	pr_debug(" No match\n");
 
 	return NULL;
 }
@@ -245,11 +186,11 @@ static void sm5xx_insert_by_size(struct sm5xx_bus *bus, sm5xx_mem_list ins)
 {
 	sm5xx_mem_list lst = NULL;
 
-	DPRINTK(" %s: %p, length: %ld, lst: %p\n", __FUNCTION__, ins,
+	pr_debug(" %s: %p, length: %ld, lst: %p\n", __FUNCTION__, ins,
 		ins->length, lst);
 
 	list_for_each_entry(lst, &bus->free_list_head, list) {
-		DPRINTK(" %ld %ld\n", lst->length, ins->length);
+		pr_debug(" %ld %ld\n", lst->length, ins->length);
 		if (lst->length >= ins->length)
 			break;
 	}
@@ -261,11 +202,11 @@ static void sm5xx_reclaim(struct sm5xx_bus *bus, sm5xx_mem_list reclaim)
 {
 	sm5xx_mem_list lst;
 
-	DPRINTK(" %s: %p\n", __FUNCTION__, reclaim);
+	pr_debug(" %s: %p\n", __FUNCTION__, reclaim);
 
 	while ((lst = sm5xx_find_neighbor(bus, reclaim))) {
 
-		DPRINTK(" neighbor: %p, length: %ld\n", reclaim, lst->length);
+		pr_debug(" neighbor: %p, length: %ld\n", reclaim, lst->length);
 
 		list_del(&lst->list);
 
@@ -300,7 +241,7 @@ void *sm5xx_malloc(struct sm5xx_bus *bus, u32 size, u32 align)
 	sm5xx_mem_list free_lst = NULL, new_lst;
 	u_long split_length;
 
-	DPRINTK(" %s: %x\n", __FUNCTION__, size);
+	pr_debug(" %s: %x\n", __FUNCTION__, size);
 
 	/* Check & correct min requirements */
 	size = ALIGN(size, SM5XX_MIN_ALLOC_SIZE);
@@ -311,7 +252,7 @@ void *sm5xx_malloc(struct sm5xx_bus *bus, u32 size, u32 align)
 
 	list_for_each_entry(free_lst, &bus->free_list_head, list) {
 
-		DPRINTK("lst: %p, length: %lx\n", free_lst, free_lst->length);
+		pr_debug("lst: %p, length: %lx\n", free_lst, free_lst->length);
 
 		/* find one big enough */
 		if (free_lst->length >= size) {
@@ -321,7 +262,7 @@ void *sm5xx_malloc(struct sm5xx_bus *bus, u32 size, u32 align)
 			/* align the split */
 			split_length &= ~(align - 1);
 
-			DPRINTK(" split_length: %ld\n", split_length);
+			pr_debug(" split_length: %ld\n", split_length);
 
 			/* split block if large enough */
 			if (split_length >= SM5XX_MIN_ALLOC_SIZE) {
@@ -347,7 +288,7 @@ void *sm5xx_malloc(struct sm5xx_bus *bus, u32 size, u32 align)
 
 			list_add(&new_lst->list, &bus->mem_list_head);
 
-			DPRINTK(" SM5XX allocated: %p length: %lx\n",
+			pr_debug(" SM5XX allocated: %p length: %lx\n",
 				new_lst->address, new_lst->length);
 
 			return new_lst->address;
@@ -495,21 +436,10 @@ void sm5xx_disable_subsystem(struct sm5xx_bus *bus, u32 gate_reg_mask)
 #ifdef CONFIG_PM
 static void sm5xx_save_regs(void)
 {
-/*	int i;
-	for (i=0; i<arraysize(sm5xx_reg_save); i++) {
-		sm5xx_reg_save[i].value = sm5xx_regRead32(sm5xx_reg_save[i].offset);
-	}
-*/
 }
 
 static void sm5xx_restore_regs(void)
 {
-	int i;
-/*
-	for (i=0; i<arraysize(sm5xx_reg_save); i++) {
-		sm5xx_regWrite32(sm5xx_reg_save[i].offset, sm5xx_reg_save[i].value);
-	}
-*/
 }
 
 static void sm5xx_power_up_chip(void)
@@ -679,84 +609,6 @@ int sm5xx_bus_init(struct sm5xx_bus *bus)
 
 	printk(DRIVER_NAME " - inited\n");
 
-#if 0
-	int i, reg;
-	u32 *ptr;
-
-	dma_addr_t h_dma;
-//      u32 *buf1 = kmalloc(PAGE_SIZE,GFP_KERNEL | GFP_DMA);
-	u32 *buf =
-	    dma_alloc_coherent(bus->bus_dev, PAGE_SIZE, &h_dma,
-			       GFP_KERNEL | GFP_DMA);
-
-	for (i = 0; i < PAGE_SIZE / 4; i++)
-		buf[i] = 0x12345678;
-
-	u32 cmds[] = {
-		LOADMEM_E(LCL(0), 10),
-		1, 2,
-		3, 4,
-		5, 6,
-		7, 8,
-		9, 10,
-		FINISH(0)
-	};
-
-	for (i = 0; i < sizeof(cmds) / 4; i++)
-		buf[i] = cpu_to_le32(cmds[i]);
-
-	volatile int dbg = 1;
-	while (dbg)
-		__asm("nop");
-
-/*	ptr = = bus->mem;
-	ptr += 0x1000/4;
-	for (i=0;i<sizeof(cmds)/4;i++) {
-		writel(cmds[i], ptr);
-		ptr++;
-	}
-//	   *ptr++ = cmds[i];
-
-	ptr = bus->mem;
-	ptr += 0x1000/4;
-	for (i=0;i<sizeof(cmds)/4;i++) {
-	   printk("%x\n",*ptr++);
-//	   buf1[i] =  *ptr++;
-	}
-*/
-	printk("CMD_INTPR_CTRL = %x\n", sm5xx_read32(CMD_INTPR_CTRL));
-	printk("CMD_INTPR_CONDITIONS = %x\n",
-	       sm5xx_read32(CMD_INTPR_CONDITIONS));
-	printk("CMD_INTPR_STATUS = %x\n", sm5xx_read32(CMD_INTPR_STATUS));
-
-	sm5xx_write32(CMD_INTPR_CTRL, 0);
-	sm5xx_write32(CMD_INTPR_CONDITIONS, 0);
-
-	__asm("nop");
-	reg = (1 << 31) | (1 << 27) | h_dma;
-	printk("reg = %x\n", reg);
-	sm5xx_write32(CMD_INTPR_CTRL, reg);
-	printk("CMD_INTPR_CTRL = %x\n", sm5xx_read32(CMD_INTPR_CTRL));
-
-	do {
-		reg = sm5xx_read32(CMD_INTPR_STATUS);
-		printk("CMD_INTPR_STATUS = %x\n", reg);
-		reg = sm5xx_read32(CMD_INTPR_CTRL);
-		printk("CMD_INTPR_CTRL = %x\n", reg);
-	} while ((reg & (1 << 31)) != 0);
-
-	ptr = bus->mem;
-	for (i = 0; i < 48; i++)
-		printk("%x\n", *ptr++);
-
-/*	reg = sm5xx_read32(0x18);
-    printk("reg = %x\n",reg);
-	sm5xx_write32(0x18,0);
-*/
-//      dma_free_coherent(&dev->dev, PAGE_SIZE, buf, h_dma);
-//      kfree(buf1);
-
-#endif
 	return 0;
 }
 
