@@ -90,22 +90,22 @@ void sm5xx_setup_clock_regs(struct sm5xx_bus *bus);
 
 #if (defined(CONFIG_SM5XX_MMIO_BUSMASTER) || \
 	 defined(CONFIG_SM5XX_PCI)) && !defined(CONFIG_SM5XX_FORCE_SLAVE)
- #define SM5XX_CI_ZONE_SIZE	PAGE_SIZE
+#define SM5XX_CI_ZONE_SIZE	PAGE_SIZE
 #else
- #define SM5XX_CI_ZONE_SIZE	1024
+#define SM5XX_CI_ZONE_SIZE	1024
 #endif
 
 #ifdef DEBUG
 void sm5xx_dump_regs(struct sm5xx_bus *bus)
 {
-  int i;
-  printk("\n--------- SM5XX REGISTERS DUMP ---------\n"
-  		 "Configuration Registers [0x00 - 0x6C]:");
-  for (i=0;i<0x6F;i+=4) {
-	if(i%16 == 0)
-		printk("\n %08X:",i);
-	printk(" %08X",_sm5xx_read32(i,bus));
-  }
+	int i;
+	printk("\n--------- SM5XX REGISTERS DUMP ---------\n"
+	       "Configuration Registers [0x00 - 0x6C]:");
+	for (i = 0; i < 0x6F; i += 4) {
+		if (i % 16 == 0)
+			printk("\n %08X:", i);
+		printk(" %08X", _sm5xx_read32(i, bus));
+	}
 /*
   printk("\n\nPanel Graphics Control Register [0x080000 - 0x080034]:");
   for (i=0x080000;i<0x080037;i+=4) {
@@ -142,26 +142,26 @@ void sm5xx_dump_regs(struct sm5xx_bus *bus)
 	printk(" %08X",_sm5xx_read32(i,bus));
   }
 */
-  printk("\n\nCRT Graphics Control Register [0x080200 - 0x080224]:");
-  for (i=0x080200;i<0x080227;i+=4) {
-	if(i%16 == 0)
-		printk("\n %08X:",i);
-	printk(" %08X",_sm5xx_read32(i,bus));
-  }
+	printk("\n\nCRT Graphics Control Register [0x080200 - 0x080224]:");
+	for (i = 0x080200; i < 0x080227; i += 4) {
+		if (i % 16 == 0)
+			printk("\n %08X:", i);
+		printk(" %08X", _sm5xx_read32(i, bus));
+	}
 
-  printk("\n\nCRT Cursor Control Register [0x080230 - 0x08023C]:");
-  for (i=0x080230;i<0x08023F;i+=4) {
-	if(i%16 == 0)
-		printk("\n %08X:",i);
-	printk(" %08X",_sm5xx_read32(i,bus));
-  }
+	printk("\n\nCRT Cursor Control Register [0x080230 - 0x08023C]:");
+	for (i = 0x080230; i < 0x08023F; i += 4) {
+		if (i % 16 == 0)
+			printk("\n %08X:", i);
+		printk(" %08X", _sm5xx_read32(i, bus));
+	}
 
-  printk("\n\n2D Drawing Engine Register [0x100000 - 0x100050]:");
-  for (i=0x100000;i<0x100053;i+=4) {
-	if(i%16 == 0)
-		printk("\n %08X:",i);
-	printk(" %08X",_sm5xx_read32(i,bus));
-  }
+	printk("\n\n2D Drawing Engine Register [0x100000 - 0x100050]:");
+	for (i = 0x100000; i < 0x100053; i += 4) {
+		if (i % 16 == 0)
+			printk("\n %08X:", i);
+		printk(" %08X", _sm5xx_read32(i, bus));
+	}
 
 /*  printk("\n\nColor Space Conversion Register [0x1000C8 - 0x1000FC]:");
   for (i=0x1000C8;i<0x1000FF;i+=4) {
@@ -177,7 +177,7 @@ void sm5xx_dump_regs(struct sm5xx_bus *bus)
 	printk(" %08X",_sm5xx_read32(i,bus));
   }
 */
-  printk("\n--------------------------------\n");
+	printk("\n--------------------------------\n");
 }
 
 u32 _sm5xx_read32(int regindex, const struct sm5xx_bus *_bus)
@@ -194,7 +194,7 @@ void _sm5xx_write32(int regindex, u32 val, const struct sm5xx_bus *_bus)
 typedef struct sm5xx_mem_list {
 	struct list_head list;
 	u_long length;
-	void * address;
+	void *address;
 } *sm5xx_mem_list;
 
 static LIST_HEAD(sm5xx_bus_list);
@@ -211,7 +211,8 @@ void sm5xx_fix_cache_bug(struct sm5xx_bus *bus)
 	ignore = sm5xx_read32(bus->mem_limit - 0x00100100);
 }
 
-static sm5xx_mem_list sm5xx_find_neighbor(struct sm5xx_bus *bus, sm5xx_mem_list neighbor)
+static sm5xx_mem_list sm5xx_find_neighbor(struct sm5xx_bus *bus,
+					  sm5xx_mem_list neighbor)
 {
 	sm5xx_mem_list lst;
 	void *top = neighbor->address + neighbor->length;
@@ -244,11 +245,13 @@ static void sm5xx_insert_by_size(struct sm5xx_bus *bus, sm5xx_mem_list ins)
 {
 	sm5xx_mem_list lst = NULL;
 
-	DPRINTK(" %s: %p, length: %ld, lst: %p\n", __FUNCTION__, ins, ins->length, lst);
+	DPRINTK(" %s: %p, length: %ld, lst: %p\n", __FUNCTION__, ins,
+		ins->length, lst);
 
 	list_for_each_entry(lst, &bus->free_list_head, list) {
 		DPRINTK(" %ld %ld\n", lst->length, ins->length);
-		if (lst->length >= ins->length)	break;
+		if (lst->length >= ins->length)
+			break;
 	}
 
 	list_add_tail(&ins->list, &lst->list);
@@ -270,8 +273,7 @@ static void sm5xx_reclaim(struct sm5xx_bus *bus, sm5xx_mem_list reclaim)
 			lst->length += reclaim->length;
 			kfree(reclaim);
 			reclaim = lst;
-		}
-		else {
+		} else {
 			reclaim->length += lst->length;
 			kfree(lst);
 		}
@@ -317,7 +319,7 @@ void *sm5xx_malloc(struct sm5xx_bus *bus, u32 size, u32 align)
 			split_length = free_lst->length - size;
 
 			/* align the split */
-			split_length &= ~(align-1);
+			split_length &= ~(align - 1);
 
 			DPRINTK(" split_length: %ld\n", split_length);
 
@@ -325,18 +327,20 @@ void *sm5xx_malloc(struct sm5xx_bus *bus, u32 size, u32 align)
 			if (split_length >= SM5XX_MIN_ALLOC_SIZE) {
 
 				new_lst = kmalloc(sizeof(*new_lst), GFP_KERNEL);
-				if (!new_lst) break;
+				if (!new_lst)
+					break;
 
-				new_lst->length = free_lst->length - split_length;
-				new_lst->address = free_lst->address + split_length;
+				new_lst->length =
+				    free_lst->length - split_length;
+				new_lst->address =
+				    free_lst->address + split_length;
 
 				free_lst->length = split_length;
 
 				list_del(&free_lst->list);
-				sm5xx_reclaim(bus,free_lst);
+				sm5xx_reclaim(bus, free_lst);
 
-			}
-			else {
+			} else {
 				list_del(&free_lst->list);
 				new_lst = free_lst;
 			}
@@ -355,35 +359,36 @@ void *sm5xx_malloc(struct sm5xx_bus *bus, u32 size, u32 align)
 }
 
 static irqreturn_t sm5xx_ci_irq(struct sm5xx_bus *bus,
-								 u32 irq,
-								 void *dev_id,
-								 struct pt_regs *regs )
+				u32 irq, void *dev_id, struct pt_regs *regs)
 {
- /*TODO: */
-  sm5xx_write32(RAW_INT_STATUS, FINIT(RAW_INT_STATUS,CMD_INTPR,CLEAR));
-  return IRQ_HANDLED;
+	/*TODO: */
+	sm5xx_write32(RAW_INT_STATUS, FINIT(RAW_INT_STATUS, CMD_INTPR, CLEAR));
+	return IRQ_HANDLED;
 }
 
-static irqreturn_t sm5xx_irq_demux( int irq, void *dev_id, struct pt_regs *regs )
+static irqreturn_t sm5xx_irq_demux(int irq, void *dev_id, struct pt_regs *regs)
 {
-	u32  pending, irq_mask;
+	u32 pending, irq_mask;
 	struct sm5xx_irqdesc *desc;
 	struct sm5xx_bus *bus = (struct sm5xx_bus *)dev_id;
 
 	pending = sm5xx_read32(INT_STATUS);
-	if(unlikely(pending==0))
+	if (unlikely(pending == 0))
 		return IRQ_NONE;
 
 	do {
-	    for (desc = bus->irq_desc; desc<&bus->irq_desc[SM5XX_NR_INTS] && desc->handler; desc++) {
-		 irq_mask = pending & desc->mask;
-		 if (irq_mask &&
-		 	 desc->handler(bus, irq_mask, desc->data, regs) == IRQ_NONE)
-			BUG();	/* Sorry, but irq MUST be handled,
-					   else you reduce performance essentially*/
+		for (desc = bus->irq_desc;
+		     desc < &bus->irq_desc[SM5XX_NR_INTS] && desc->handler;
+		     desc++) {
+			irq_mask = pending & desc->mask;
+			if (irq_mask &&
+			    desc->handler(bus, irq_mask, desc->data,
+					  regs) == IRQ_NONE)
+				BUG();	/* Sorry, but irq MUST be handled,
+					   else you reduce performance essentially */
 		}
 		pending = sm5xx_read32(INT_STATUS);
-	} while(pending);
+	} while (pending);
 
 	return IRQ_HANDLED;
 }
@@ -397,72 +402,72 @@ static inline u32 _sm5xx_mask_irq(struct sm5xx_bus *bus, u32 irq_mask)
 
 static inline void _sm5xx_unmask_irq(struct sm5xx_bus *bus, u32 irq_mask)
 {
-	sm5xx_write32(INT_MASK,
-				  sm5xx_read32(INT_MASK) | irq_mask);
+	sm5xx_write32(INT_MASK, sm5xx_read32(INT_MASK) | irq_mask);
 }
 
 u32 sm5xx_mask_irq(struct sm5xx_bus *bus, u32 irq_mask)
 {
-  u32 ret;
-  spin_lock(&bus->irq_lock);
+	u32 ret;
+	spin_lock(&bus->irq_lock);
 	ret = _sm5xx_mask_irq(bus, SM5XX_ALL_INTS_MASK);
-  spin_unlock(&bus->irq_lock);
-  return ret;
+	spin_unlock(&bus->irq_lock);
+	return ret;
 }
 
 void sm5xx_unmask_irq(struct sm5xx_bus *bus, u32 irq_mask)
 {
-  spin_lock(&bus->irq_lock);
+	spin_lock(&bus->irq_lock);
 	_sm5xx_unmask_irq(bus, irq_mask);
-  spin_unlock(&bus->irq_lock);
+	spin_unlock(&bus->irq_lock);
 }
 
 int sm5xx_request_irq(struct sm5xx_bus *bus, int irq_mask,
-					   sm5xx_handler_t handler,
-					   void *data, int irq_enable)
+		      sm5xx_handler_t handler, void *data, int irq_enable)
 {
-  struct sm5xx_irqdesc *desc;
-  int ret = -EINVAL;
-  u32 old_irq_mask;
+	struct sm5xx_irqdesc *desc;
+	int ret = -EINVAL;
+	u32 old_irq_mask;
 
-  spin_lock(&bus->irq_lock);
-  old_irq_mask = _sm5xx_mask_irq(bus, SM5XX_ALL_INTS_MASK);
-  for (desc = bus->irq_desc; desc<&bus->irq_desc[SM5XX_NR_INTS]; desc++) {
-	if (desc->mask & irq_mask)
-		break;
-	if (!desc->handler) {
-		desc->mask = irq_mask;
-		desc->handler = handler;
-		desc->data = data;
-		if(irq_enable)
-			old_irq_mask |= irq_mask;
-		ret = 0;
-		break;
+	spin_lock(&bus->irq_lock);
+	old_irq_mask = _sm5xx_mask_irq(bus, SM5XX_ALL_INTS_MASK);
+	for (desc = bus->irq_desc; desc < &bus->irq_desc[SM5XX_NR_INTS]; desc++) {
+		if (desc->mask & irq_mask)
+			break;
+		if (!desc->handler) {
+			desc->mask = irq_mask;
+			desc->handler = handler;
+			desc->data = data;
+			if (irq_enable)
+				old_irq_mask |= irq_mask;
+			ret = 0;
+			break;
+		}
 	}
- }
- _sm5xx_unmask_irq(bus, old_irq_mask);
- spin_unlock(&bus->irq_lock);
+	_sm5xx_unmask_irq(bus, old_irq_mask);
+	spin_unlock(&bus->irq_lock);
 
- return ret;
+	return ret;
 }
 
-int sm5xx_enable_subsystem(struct sm5xx_bus *bus, u32 normal_gate_mask, u32 suspend_gate_mask)
+int sm5xx_enable_subsystem(struct sm5xx_bus *bus, u32 normal_gate_mask,
+			   u32 suspend_gate_mask)
 {
 	u32 reg, suspend_gate;
 
-	suspend_gate = (bus->pm_normal_gate_reg == POWER_MODE0_GATE)?POWER_MODE1_GATE
-																:POWER_MODE0_GATE;
+	suspend_gate =
+	    (bus->pm_normal_gate_reg ==
+	     POWER_MODE0_GATE) ? POWER_MODE1_GATE : POWER_MODE0_GATE;
 	sm5xx_acquire_control_lock(bus);
 
-	 reg = sm5xx_read32(bus->pm_normal_gate_reg);
-	 reg |= normal_gate_mask;
-	 sm5xx_write32(bus->pm_normal_gate_reg, reg);
+	reg = sm5xx_read32(bus->pm_normal_gate_reg);
+	reg |= normal_gate_mask;
+	sm5xx_write32(bus->pm_normal_gate_reg, reg);
 
-	 if (suspend_gate_mask) {
-	  reg = sm5xx_read32(suspend_gate);
-	  reg |= suspend_gate_mask;
-  	  sm5xx_write32(suspend_gate, reg);
-	 }
+	if (suspend_gate_mask) {
+		reg = sm5xx_read32(suspend_gate);
+		reg |= suspend_gate_mask;
+		sm5xx_write32(suspend_gate, reg);
+	}
 	sm5xx_release_control_lock(bus);
 	return reg;
 }
@@ -470,23 +475,22 @@ int sm5xx_enable_subsystem(struct sm5xx_bus *bus, u32 normal_gate_mask, u32 susp
 void sm5xx_disable_subsystem(struct sm5xx_bus *bus, u32 gate_reg_mask)
 {
 	u32 reg;
-	gate_reg_mask &= ~(FINIT(POWER_MODE_GATE,HOST,ENABLE) |
-					   FINIT(POWER_MODE_GATE,INTMEM,ENABLE));
-	if ( gate_reg_mask ) {
+	gate_reg_mask &= ~(FINIT(POWER_MODE_GATE, HOST, ENABLE) |
+			   FINIT(POWER_MODE_GATE, INTMEM, ENABLE));
+	if (gate_reg_mask) {
 		sm5xx_acquire_control_lock(bus);
 
-		 reg = sm5xx_read32(POWER_MODE0_GATE);
-		 reg &= ~gate_reg_mask;
-		 sm5xx_write32(POWER_MODE0_GATE, reg);
+		reg = sm5xx_read32(POWER_MODE0_GATE);
+		reg &= ~gate_reg_mask;
+		sm5xx_write32(POWER_MODE0_GATE, reg);
 
-		 reg = sm5xx_read32(POWER_MODE1_GATE);
-		 reg &= ~gate_reg_mask;
-		 sm5xx_write32(POWER_MODE1_GATE, reg);
+		reg = sm5xx_read32(POWER_MODE1_GATE);
+		reg &= ~gate_reg_mask;
+		sm5xx_write32(POWER_MODE1_GATE, reg);
 
 		sm5xx_release_control_lock(bus);
 	}
 }
-
 
 #ifdef CONFIG_PM
 static void sm5xx_save_regs(void)
@@ -577,27 +581,27 @@ static int sm5xx_bus_remove(struct device *dev)
 }
 
 struct bus_type sm5xx_bus_type = {
-	.name		= "sm5xx-mem-bus",
-	.match		= sm5xx_match,
-	.suspend	= sm5xx_bus_suspend,
-	.resume		= sm5xx_bus_resume,
+	.name = "sm5xx-mem-bus",
+	.match = sm5xx_match,
+	.suspend = sm5xx_bus_suspend,
+	.resume = sm5xx_bus_resume,
 };
 
 struct sm5xx_bus *sm5xx_bus_alloc()
 {
-  struct sm5xx_bus *bus;
-  bus = kmalloc(sizeof(struct sm5xx_bus), GFP_KERNEL);
-  if (bus) {
-	memset(bus,0,sizeof(struct sm5xx_bus));
-	INIT_LIST_HEAD(&bus->bus_list);
-  }
-  return bus;
+	struct sm5xx_bus *bus;
+	bus = kmalloc(sizeof(struct sm5xx_bus), GFP_KERNEL);
+	if (bus) {
+		memset(bus, 0, sizeof(struct sm5xx_bus));
+		INIT_LIST_HEAD(&bus->bus_list);
+	}
+	return bus;
 }
 
 void sm5xx_bus_free(struct sm5xx_bus *bus)
 {
-   list_del(&bus->bus_list);
-   kfree(bus);
+	list_del(&bus->bus_list);
+	kfree(bus);
 }
 
 static void sm5xx_reset_regs(struct sm5xx_bus *bus)
@@ -607,25 +611,23 @@ static void sm5xx_reset_regs(struct sm5xx_bus *bus)
 	bus->pm_normal_gate_reg = POWER_MODE0_GATE;
 
 	sm5xx_write32(POWER_MODE0_GATE,
-				  FINIT(POWER_MODE_GATE,INTMEM,ENABLE) |
-				  FINIT(POWER_MODE_GATE,HOST,ENABLE));
+		      FINIT(POWER_MODE_GATE, INTMEM, ENABLE) |
+		      FINIT(POWER_MODE_GATE, HOST, ENABLE));
 
 	sm5xx_write32(POWER_MODE1_GATE,
-				  FINIT(POWER_MODE_GATE,INTMEM,ENABLE) |
-				  FINIT(POWER_MODE_GATE,HOST,ENABLE));
+		      FINIT(POWER_MODE_GATE, INTMEM, ENABLE) |
+		      FINIT(POWER_MODE_GATE, HOST, ENABLE));
 
 	sm5xx_write32(POWER_SLEEP_GATE,
-				  FINIT_VAL(POWER_SLEEP_GATE,PLL_RECOVERY_CLOCK,4096));
+		      FINIT_VAL(POWER_SLEEP_GATE, PLL_RECOVERY_CLOCK, 4096));
 	/* Defined in sm5xx_pci.c or in sm5xx_platform.c */
 	sm5xx_setup_clock_regs(bus);
 }
 
-
 int sm5xx_get_bios_info(struct sm5xx_bus *bus,
-						struct fb_var_screeninfo *var,
-						display_t type)
+			struct fb_var_screeninfo *var, display_t type)
 {
- return 0;
+	return 0;
 }
 
 int sm5xx_bus_init(struct sm5xx_bus *bus)
@@ -637,7 +639,8 @@ int sm5xx_bus_init(struct sm5xx_bus *bus)
 	init_MUTEX(&bus->control_regs_lock);
 	spin_lock_init(&bus->irq_lock);
 
-	bus->all_free_mem = (sm5xx_mem_list)kmalloc(sizeof(*bus->all_free_mem), GFP_KERNEL);
+	bus->all_free_mem =
+	    (sm5xx_mem_list) kmalloc(sizeof(*bus->all_free_mem), GFP_KERNEL);
 	if (unlikely(!bus->all_free_mem))
 		return -ENOMEM;
 
@@ -649,58 +652,62 @@ int sm5xx_bus_init(struct sm5xx_bus *bus)
 	 defined(CONFIG_SM5XX_PCI)) && !defined(CONFIG_SM5XX_FORCE_SLAVE)
 
 	bus->ci_list.buf = dma_alloc_coherent(bus->bus_dev, SM5XX_CI_ZONE_SIZE,
-										  &bus->h_ci_list, GFP_KERNEL | GFP_DMA);
+					      &bus->h_ci_list,
+					      GFP_KERNEL | GFP_DMA);
 #else
 	bus->ci_list.buf = sm5xx_malloc(bus, SM5XX_CI_ZONE_SIZE, SM5XX_ALIGN);
 	if (likely(bus->ci_list.buf))
-		bus->h_ci_list   = sm5xx_virt_to_offset(bus, bus->ci_list.buf);
+		bus->h_ci_list = sm5xx_virt_to_offset(bus, bus->ci_list.buf);
 #endif
 	if (unlikely(!bus->ci_list.buf))
 		return -ENOMEM;
 	bus->ci_list.head = bus->ci_list.tail = 0;
 
-    if ((ret = request_irq(bus->irq, sm5xx_irq_demux, SA_SHIRQ, "sm5xx_irq_demux", bus)) < 0) {
+	if ((ret =
+	     request_irq(bus->irq, sm5xx_irq_demux, SA_SHIRQ, "sm5xx_irq_demux",
+			 bus)) < 0) {
 		printk(KERN_ERR DRIVER_NAME " - failed to attach interrupt\n");
-	   	return ret;
-    }
+		return ret;
+	}
 
 	sm5xx_reset_regs(bus);
-	list_add_tail(&bus->bus_list,&sm5xx_bus_list);
+	list_add_tail(&bus->bus_list, &sm5xx_bus_list);
 
 	sm5xx_request_irq(bus,
-					  FINIT(INT_MASK,CMD_INTPR,ENABLE),
-					  sm5xx_ci_irq, NULL, 0);
+			  FINIT(INT_MASK, CMD_INTPR, ENABLE),
+			  sm5xx_ci_irq, NULL, 0);
 
 	printk(DRIVER_NAME " - inited\n");
 
 #if 0
-	int i,reg;
+	int i, reg;
 	u32 *ptr;
 
 	dma_addr_t h_dma;
-//	u32 *buf1 = kmalloc(PAGE_SIZE,GFP_KERNEL | GFP_DMA);
-	u32 *buf = dma_alloc_coherent(bus->bus_dev, PAGE_SIZE, &h_dma, GFP_KERNEL | GFP_DMA);
+//      u32 *buf1 = kmalloc(PAGE_SIZE,GFP_KERNEL | GFP_DMA);
+	u32 *buf =
+	    dma_alloc_coherent(bus->bus_dev, PAGE_SIZE, &h_dma,
+			       GFP_KERNEL | GFP_DMA);
 
-	for (i=0;i<PAGE_SIZE/4;i++)
+	for (i = 0; i < PAGE_SIZE / 4; i++)
 		buf[i] = 0x12345678;
 
-	u32 cmds[] =
-	{
-		LOADMEM_E(LCL(0),10),
-		1,	2,
-		3,	4,
-		5,	6,
-		7,	8,
-		9,	10,
+	u32 cmds[] = {
+		LOADMEM_E(LCL(0), 10),
+		1, 2,
+		3, 4,
+		5, 6,
+		7, 8,
+		9, 10,
 		FINISH(0)
 	};
 
-	for (i=0;i<sizeof(cmds)/4;i++)
+	for (i = 0; i < sizeof(cmds) / 4; i++)
 		buf[i] = cpu_to_le32(cmds[i]);
 
 	volatile int dbg = 1;
-	while(dbg)
-	__asm("nop");
+	while (dbg)
+		__asm("nop");
 
 /*	ptr = = bus->mem;
 	ptr += 0x1000/4;
@@ -717,52 +724,53 @@ int sm5xx_bus_init(struct sm5xx_bus *bus)
 //	   buf1[i] =  *ptr++;
 	}
 */
-   printk("CMD_INTPR_CTRL = %x\n",sm5xx_read32(CMD_INTPR_CTRL));
-   printk("CMD_INTPR_CONDITIONS = %x\n",sm5xx_read32(CMD_INTPR_CONDITIONS));
-   printk("CMD_INTPR_STATUS = %x\n",sm5xx_read32(CMD_INTPR_STATUS));
+	printk("CMD_INTPR_CTRL = %x\n", sm5xx_read32(CMD_INTPR_CTRL));
+	printk("CMD_INTPR_CONDITIONS = %x\n",
+	       sm5xx_read32(CMD_INTPR_CONDITIONS));
+	printk("CMD_INTPR_STATUS = %x\n", sm5xx_read32(CMD_INTPR_STATUS));
 
-	sm5xx_write32(CMD_INTPR_CTRL,0);
-	sm5xx_write32(CMD_INTPR_CONDITIONS,0);
+	sm5xx_write32(CMD_INTPR_CTRL, 0);
+	sm5xx_write32(CMD_INTPR_CONDITIONS, 0);
 
 	__asm("nop");
-	reg = (1<<31)|(1<<27)|h_dma;
-    printk("reg = %x\n",reg);
-	sm5xx_write32(CMD_INTPR_CTRL,reg);
-    printk("CMD_INTPR_CTRL = %x\n",sm5xx_read32(CMD_INTPR_CTRL));
+	reg = (1 << 31) | (1 << 27) | h_dma;
+	printk("reg = %x\n", reg);
+	sm5xx_write32(CMD_INTPR_CTRL, reg);
+	printk("CMD_INTPR_CTRL = %x\n", sm5xx_read32(CMD_INTPR_CTRL));
 
 	do {
 		reg = sm5xx_read32(CMD_INTPR_STATUS);
-	    printk("CMD_INTPR_STATUS = %x\n",reg);
+		printk("CMD_INTPR_STATUS = %x\n", reg);
 		reg = sm5xx_read32(CMD_INTPR_CTRL);
-	    printk("CMD_INTPR_CTRL = %x\n",reg);
-	} while( (reg&(1<<31)) != 0);
+		printk("CMD_INTPR_CTRL = %x\n", reg);
+	} while ((reg & (1 << 31)) != 0);
 
 	ptr = bus->mem;
-	for(i=0;i<48;i++)
-	   printk("%x\n",*ptr++);
+	for (i = 0; i < 48; i++)
+		printk("%x\n", *ptr++);
 
 /*	reg = sm5xx_read32(0x18);
     printk("reg = %x\n",reg);
 	sm5xx_write32(0x18,0);
 */
-//	dma_free_coherent(&dev->dev, PAGE_SIZE, buf, h_dma);
-//	kfree(buf1);
+//      dma_free_coherent(&dev->dev, PAGE_SIZE, buf, h_dma);
+//      kfree(buf1);
 
 #endif
-    return 0;
+	return 0;
 }
 
 const char *sm5xx_dev_name[] = {
-	 "sm5xx-fb",
-	 "sm5xx-ohci",
-	 "sm5xx-i2c",
+	"sm5xx-fb",
+	"sm5xx-ohci",
+	"sm5xx-i2c",
 };
 
 struct sm5xx_dev *sm5xx_find_child(struct sm5xx_bus *bus, unsigned int child_id)
 {
 	struct klist_iter it;
 	struct sm5xx_dev *child_dev;
-	struct klist_node * node;
+	struct klist_node *node;
 
 	if (!bus)
 		return NULL;
@@ -770,25 +778,27 @@ struct sm5xx_dev *sm5xx_find_child(struct sm5xx_bus *bus, unsigned int child_id)
 	klist_iter_init_node(&bus->bus_dev->klist_children, &it, NULL);
 
 	while ((node = klist_next(&it))) {
-		child_dev = SM5XX_DEV(container_of(node, struct device, knode_parent));
-		if ( child_dev->devid == child_id && get_device(&child_dev->dev))
+		child_dev =
+		    SM5XX_DEV(container_of(node, struct device, knode_parent));
+		if (child_dev->devid == child_id && get_device(&child_dev->dev))
 			break;
 	}
 	klist_iter_exit(&it);
 	return child_dev;
 }
 
-static int sm5xx_init_child(struct sm5xx_dev *sdev, struct device *dev, unsigned int id)
+static int sm5xx_init_child(struct sm5xx_dev *sdev, struct device *dev,
+			    unsigned int id)
 {
 	int rtn;
 
 	memset(sdev, 0, sizeof(*sdev));
 	strcpy(sdev->dev.bus_id, sm5xx_dev_name[id]);
-	sdev->devid			= id;
-	sdev->dma_mask		= *dev->dma_mask;
-	sdev->dev.parent	= dev;
-	sdev->dev.bus		= &sm5xx_bus_type;
-	sdev->dev.dma_mask	= &sdev->dma_mask;
+	sdev->devid = id;
+	sdev->dma_mask = *dev->dma_mask;
+	sdev->dev.parent = dev;
+	sdev->dev.bus = &sm5xx_bus_type;
+	sdev->dev.dma_mask = &sdev->dma_mask;
 
 	rtn = device_register(&sdev->dev);
 	if (likely(!rtn))
@@ -799,7 +809,7 @@ static int sm5xx_init_child(struct sm5xx_dev *sdev, struct device *dev, unsigned
 
 static int compare_dev(struct device *dev, void *devid)
 {
-	return 	(SM5XX_DRV(dev->driver)->devid == (unsigned int)devid)?1:0;
+	return (SM5XX_DRV(dev->driver)->devid == (unsigned int)devid) ? 1 : 0;
 }
 
 int sm5xx_driver_register(struct sm5xx_driver *driver)
@@ -807,19 +817,23 @@ int sm5xx_driver_register(struct sm5xx_driver *driver)
 	int ret;
 	struct sm5xx_dev *dev;
 	struct list_head *tmp;
-	if(driver->drv.bus != &sm5xx_bus_type)
-			return -EINVAL;
+	if (driver->drv.bus != &sm5xx_bus_type)
+		return -EINVAL;
 
-	if (bus_for_each_dev(&sm5xx_bus_type, NULL, (void *)driver->devid, compare_dev))
+	if (bus_for_each_dev
+	    (&sm5xx_bus_type, NULL, (void *)driver->devid, compare_dev))
 		return -EBUSY;
 
-	list_for_each(tmp,&sm5xx_bus_list)  {
-		ret =  -ENOMEM;
+	list_for_each(tmp, &sm5xx_bus_list) {
+		ret = -ENOMEM;
 		dev = (struct sm5xx_dev *)kmalloc(sizeof(*dev), GFP_KERNEL);
 		if (likely(dev))
-			ret = sm5xx_init_child(dev, list_entry(tmp,sm5xx_bus_t,bus_list)->bus_dev,
-								   driver->devid);
-		if (ret<0)
+			ret =
+			    sm5xx_init_child(dev,
+					     list_entry(tmp, sm5xx_bus_t,
+							bus_list)->bus_dev,
+					     driver->devid);
+		if (ret < 0)
 			goto cleanup;
 	}
 
@@ -827,10 +841,10 @@ int sm5xx_driver_register(struct sm5xx_driver *driver)
 	driver->drv.remove = sm5xx_bus_remove;
 	driver->drv.bus = &sm5xx_bus_type;
 	ret = driver_register(&driver->drv);
-	if(ret>=0)
+	if (ret >= 0)
 		return ret;
 
-cleanup:
+      cleanup:
 	if (dev) {
 		kfree(dev);
 	}
