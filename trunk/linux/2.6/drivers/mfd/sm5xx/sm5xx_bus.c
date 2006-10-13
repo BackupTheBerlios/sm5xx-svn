@@ -350,30 +350,37 @@ static inline void _sm5xx_unmask_irq(struct sm5xx_bus *bus, u32 irq_mask)
 
 u32 sm5xx_mask_irq(struct sm5xx_bus *bus, u32 irq_mask)
 {
+	unsigned long flags;
 	u32 ret;
-	spin_lock(&bus->irq_lock);
+
+	spin_lock_irqsave(&bus->irq_lock, flags);
 	ret = _sm5xx_mask_irq(bus, SM5XX_ALL_INTS_MASK);
-	spin_unlock(&bus->irq_lock);
+	spin_unlock_irqrestore(&bus->irq_lock, flags);
+
 	return ret;
 }
 
 void sm5xx_unmask_irq(struct sm5xx_bus *bus, u32 irq_mask)
 {
-	spin_lock(&bus->irq_lock);
+	unsigned long flags;
+
+	spin_lock_irqsave(&bus->irq_lock, flags);
 	_sm5xx_unmask_irq(bus, irq_mask);
-	spin_unlock(&bus->irq_lock);
+	spin_unlock_irqrestore(&bus->irq_lock, flags);
 }
 
 int sm5xx_request_irq(struct sm5xx_bus *bus, int irq_mask,
 		      sm5xx_handler_t handler, void *data, int irq_enable)
 {
 	struct sm5xx_irqdesc *desc;
+	unsigned long flags;
 	int ret = -EINVAL;
 	u32 old_irq_mask;
 
-	spin_lock(&bus->irq_lock);
+	spin_lock_irqsave(&bus->irq_lock, flags);
 	old_irq_mask = _sm5xx_mask_irq(bus, SM5XX_ALL_INTS_MASK);
-	for (desc = bus->irq_desc; desc < &bus->irq_desc[SM5XX_NR_INTS]; desc++) {
+	for (desc = bus->irq_desc;
+	     desc < &bus->irq_desc[SM5XX_NR_INTS]; desc++) {
 		if (desc->mask & irq_mask)
 			break;
 		if (!desc->handler) {
@@ -387,7 +394,7 @@ int sm5xx_request_irq(struct sm5xx_bus *bus, int irq_mask,
 		}
 	}
 	_sm5xx_unmask_irq(bus, old_irq_mask);
-	spin_unlock(&bus->irq_lock);
+	spin_unlock_irqrestore(&bus->irq_lock, flags);
 
 	return ret;
 }
